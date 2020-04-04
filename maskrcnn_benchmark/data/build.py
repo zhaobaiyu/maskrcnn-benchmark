@@ -105,7 +105,7 @@ def make_batch_data_sampler(
     return batch_sampler
 
 
-def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0, is_for_period=False):
+def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0, is_for_period=False, phase=1):
     num_gpus = get_world_size()
     if is_train:
         images_per_batch = cfg.SOLVER.IMS_PER_BATCH
@@ -115,7 +115,7 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0, is_
             images_per_batch, num_gpus)
         images_per_gpu = images_per_batch // num_gpus
         shuffle = True
-        num_iters = cfg.SOLVER.MAX_ITER
+        num_iters = cfg.SOLVER.MAX_ITER1 if phase == 1 else cfg.SOLVER.MAX_ITER2
     else:
         images_per_batch = cfg.TEST.IMS_PER_BATCH
         assert (
@@ -149,8 +149,12 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0, is_
         "maskrcnn_benchmark.config.paths_catalog", cfg.PATHS_CATALOG, True
     )
     DatasetCatalog = paths_catalog.DatasetCatalog
-    dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
 
+    if phase == 1:
+        dataset_list = cfg.DATASETS.TRAIN1 if is_train else cfg.DATASETS.TEST
+    elif phase == 2:
+        dataset_list = cfg.DATASETS.TRAIN2 if is_train else cfg.DATASETS.TEST
+    
     # If bbox aug is enabled in testing, simply set transforms to None and we will apply transforms later
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
     datasets = build_dataset(dataset_list, transforms, DatasetCatalog, is_train or is_for_period)

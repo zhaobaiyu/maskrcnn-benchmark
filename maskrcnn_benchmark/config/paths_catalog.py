@@ -147,6 +147,25 @@ class DatasetCatalog(object):
             "mode": "mask",
             "mini": 10,
         },
+        "vid_2015_train": {
+            "data_dir": "ILSVRC",
+            "split": "train",
+            "imgsetname": 'VID_train_frames50.txt'
+        },
+        "vid_2015_val": {
+            "data_dir": "ILSVRC",
+            "split": "val",
+            "imgsetname": 'VID_val_frames.txt'
+        },
+        "vid_2015_test": {
+            "data_dir": "ILSVRC",
+            "split": "test"
+        },
+        "det_30classes_train": {
+            "data_dir": "ILSVRC",
+            "split": "train",
+            "imgsetname": 'DET_train_30classes.txt'
+        },        
     }
 
     @staticmethod
@@ -179,6 +198,30 @@ class DatasetCatalog(object):
             attrs["img_dir"] = os.path.join(data_dir, attrs["img_dir"])
             attrs["ann_dir"] = os.path.join(data_dir, attrs["ann_dir"])
             return dict(factory="CityScapesDataset", args=attrs)
+        elif "vid" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                data_dir=os.path.join(data_dir, attrs['data_dir']),
+                split=attrs['split'],
+                imgsetname=attrs['imgsetname'],
+            )
+            return dict(
+                factory="VIDDataset",
+                args=args,
+            )
+        elif 'det' in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                data_dir=os.path.join(data_dir, attrs['data_dir']),
+                split=attrs['split'],
+                imgsetname=attrs['imgsetname'],
+            )
+            return dict(
+                factory="DETDataset",
+                args=args,
+            )        
         raise RuntimeError("Dataset not available: {}".format(name))
 
 

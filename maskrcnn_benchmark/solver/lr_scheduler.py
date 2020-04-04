@@ -47,6 +47,6 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
         return [
             base_lr
             * warmup_factor
-            * self.gamma ** bisect_right(self.milestones, self.last_epoch)
+            * self.gamma ** (bisect_right(self.milestones, self.last_epoch) % 2)
             for base_lr in self.base_lrs
         ]

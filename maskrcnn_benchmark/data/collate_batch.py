@@ -15,10 +15,19 @@ class BatchCollator(object):
     def __call__(self, batch):
         transposed_batch = list(zip(*batch))
         images = to_image_list(transposed_batch[0], self.size_divisible)
-        targets = transposed_batch[1]
-        img_ids = transposed_batch[2]
-        return images, targets, img_ids
 
+        if not None in transposed_batch[1]:
+        # if transposed_batch[1][0] is not None:
+            # transposed_batch[1] is tuple, len(transposed_batch[1]) = batch_size
+            batches_nearby_imgs = []
+            for nearby_imgs in transposed_batch[1]:
+                batches_nearby_imgs.append(to_image_list(nearby_imgs, self.size_divisible))
+        else:
+            batches_nearby_imgs = None
+            
+        targets = transposed_batch[2]
+        img_ids = transposed_batch[3]
+        return images, batches_nearby_imgs, targets, img_ids
 
 class BBoxAugCollator(object):
     """

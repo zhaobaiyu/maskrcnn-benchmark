@@ -70,6 +70,9 @@ _C.INPUT.VERTICAL_FLIP_PROB_TRAIN = 0.0
 _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
 _C.DATASETS.TRAIN = ()
+# List of the dataset names for training phase 1/2, as present in paths_catalog.py
+_C.DATASETS.TRAIN1 = ()
+_C.DATASETS.TRAIN2 = ()
 # List of the dataset names for testing, as present in paths_catalog.py
 _C.DATASETS.TEST = ()
 
@@ -393,6 +396,9 @@ _C.MODEL.FBNET.RPN_BN_TYPE = ""
 _C.SOLVER = CN()
 _C.SOLVER.MAX_ITER = 40000
 
+_C.SOLVER.MAX_ITER1 = 40000
+_C.SOLVER.MAX_ITER2 = 40000
+
 _C.SOLVER.BASE_LR = 0.001
 _C.SOLVER.BIAS_LR_FACTOR = 2
 
@@ -404,11 +410,14 @@ _C.SOLVER.WEIGHT_DECAY_BIAS = 0
 _C.SOLVER.GAMMA = 0.1
 _C.SOLVER.STEPS = (30000,)
 
+_C.SOLVER.STEPS1 = (30000,)
+_C.SOLVER.STEPS2 = (30000,)
+
 _C.SOLVER.WARMUP_FACTOR = 1.0 / 3
 _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-_C.SOLVER.CHECKPOINT_PERIOD = 2500
+_C.SOLVER.CHECKPOINT_PERIOD = 20000
 _C.SOLVER.TEST_PERIOD = 0
 
 # Number of images per batch

@@ -15,6 +15,9 @@ from maskrcnn_benchmark.engine.inference import inference
 
 from apex import amp
 
+from collections import defaultdict
+import matplotlib.pyplot as plt
+
 def reduce_loss_dict(loss_dict):
     """
     Reduce the loss dictionary from all processes so that process with rank
@@ -52,9 +55,10 @@ def do_train(
     checkpoint_period,
     test_period,
     arguments,
+    training_phase,
 ):
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
-    logger.info("Start training")
+    logger.info("Start training phase: " + str(training_phase))
     meters = MetricLogger(delimiter="  ")
     max_iter = len(data_loader)
     start_iter = arguments["iteration"]
@@ -69,7 +73,15 @@ def do_train(
         iou_types = iou_types + ("keypoints",)
     dataset_names = cfg.DATASETS.TEST
 
-    for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
+    
+    # create dir of figures
+    start_datetime = datetime.datetime.now().strftime('%Y%m%d%H%M')
+    figures_dir = os.path.join('figures', start_datetime)
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+    plot_median, plot_global_avg = arguments['plot_median'], arguments['plot_global_avg']
+
+    for iteration, (images, batches_nearby_images, targets, index) in enumerate(data_loader, start_iter):
         
         if any(len(target) < 1 for target in targets):
             logger.error(f"Iteration={iteration + 1} || Image Ids used for training {_} || targets Length={[len(target) for target in targets]}" )
@@ -79,9 +91,14 @@ def do_train(
         arguments["iteration"] = iteration
 
         images = images.to(device)
+
+        if batches_nearby_images is not None:
+            for nearby_i, nearby_images in enumerate(batches_nearby_images):
+                batches_nearby_images[nearby_i] = nearby_images.to(device)
+        
         targets = [target.to(device) for target in targets]
 
-        loss_dict = model(images, targets)
+        loss_dict = model(images, batches_nearby_images, targets)
 
         losses = sum(loss for loss in loss_dict.values())
 
@@ -124,7 +141,8 @@ def do_train(
                 )
             )
         if iteration % checkpoint_period == 0:
-            checkpointer.save("model_{:07d}".format(iteration), **arguments)
+            checkpointer.save("model_phase{}_{:07d}".format(training_phase, iteration), **arguments)
+            
         if data_loader_val is not None and test_period > 0 and iteration % test_period == 0:
             meters_val = MetricLogger(delimiter="  ")
             synchronize()
@@ -172,8 +190,25 @@ def do_train(
                     memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
                 )
             )
+	
+        if iteration % 100 == 0 or iteration == max_iter:
+            for attr in meters.meters:
+                if attr not in ['data', 'time']:
+                    plot_median[attr].append(meters.meters[attr].median)
+                    plot_global_avg[attr].append(meters.meters[attr].global_avg)
+                    figure_path = os.path.join(figures_dir, attr+'.png')
+                    fig = plt.figure()
+                    plot1, = plt.plot(plot_median[attr])
+                    plot2, = plt.plot(plot_global_avg[attr])
+                    plt.xlabel('iteration(*100)')
+                    plt.ylabel(attr)
+                    plt.title('{} of every 100 iterations'.format(attr))
+                    plt.legend([plot1, plot2], ['median', 'global_avg'])
+                    plt.savefig(figure_path)
+                    plt.close('all')
+            
         if iteration == max_iter:
-            checkpointer.save("model_final", **arguments)
+            checkpointer.save("model_final_phase{}".format(training_phase), **arguments)            
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))

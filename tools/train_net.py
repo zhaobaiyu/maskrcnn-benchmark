@@ -9,6 +9,7 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 
 import argparse
 import os
+from collections import defaultdict
 
 import torch
 from maskrcnn_benchmark.config import cfg
@@ -55,6 +56,9 @@ def train(cfg, local_rank, distributed):
 
     arguments = {}
     arguments["iteration"] = 0
+    arguments['phase'] = 1
+    arguments['plot_median'], arguments['plot_global_avg'] = defaultdict(list), defaultdict(list)
+    
 
     output_dir = cfg.OUTPUT_DIR
 
@@ -64,26 +68,52 @@ def train(cfg, local_rank, distributed):
     )
     extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
     arguments.update(extra_checkpoint_data)
-
-    data_loader = make_data_loader(
-        cfg,
-        is_train=True,
-        is_distributed=distributed,
-        start_iter=arguments["iteration"],
-    )
-
+    
     test_period = cfg.SOLVER.TEST_PERIOD
     if test_period > 0:
         data_loader_val = make_data_loader(cfg, is_train=False, is_distributed=distributed, is_for_period=True)
     else:
         data_loader_val = None
-
+        
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
+
+    if arguments['phase'] == 1:
+        data_loader = make_data_loader(
+            cfg,
+            is_train=True,
+            is_distributed=distributed,
+            start_iter=arguments["iteration"],
+            phase=1,
+        )
+        do_train(
+            cfg,
+            model,
+            data_loader,
+            data_loader_val,
+            optimizer,
+            scheduler,
+            checkpointer,
+            device,
+            checkpoint_period,
+            test_period,
+            arguments,
+            training_phase=1,
+        )
+        arguments["iteration"] = 0
+        arguments["phase"] = 2
+
+    data_loader_phase2 = make_data_loader(
+        cfg,
+        is_train=True,
+        is_distributed=distributed,
+        start_iter=arguments["iteration"],
+        phase=2,
+    )
 
     do_train(
         cfg,
         model,
-        data_loader,
+        data_loader_phase2,
         data_loader_val,
         optimizer,
         scheduler,
@@ -92,6 +122,7 @@ def train(cfg, local_rank, distributed):
         checkpoint_period,
         test_period,
         arguments,
+        training_phase=2,
     )
 
     return model
