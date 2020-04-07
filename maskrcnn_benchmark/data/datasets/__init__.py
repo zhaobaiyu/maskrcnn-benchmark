@@ -5,6 +5,7 @@ from .voc import PascalVOCDataset
 from .concat_dataset import ConcatDataset
 from .abstract import AbstractDataset
 from .cityscapes import CityScapesDataset
+from .imagenet_vid import VIDDataset
 from .imagenet_det import DETDataset
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "PascalVOCDataset",
     "AbstractDataset",
     "CityScapesDataset",
-    "DETDataset"
+    "DETDataset",
+    "VIDdataset"
 ]

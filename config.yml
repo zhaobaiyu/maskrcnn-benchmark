@@ -215,7 +215,7 @@ MODEL:
   RPN_ONLY: true
   WEIGHT: catalog://ImageNetPretrained/MSRA/R-50
 OUTPUT_DIR: .
-PATHS_CATALOG: /mnt/ssd1t/baiyu/Projects/exps/mb/maskrcnn_benchmark/config/paths_catalog.py
+PATHS_CATALOG: /mnt/ssd1t/baiyu/Projects/exps/attention-rcnn-retinanet-0404/maskrcnn_benchmark/config/paths_catalog.py
 SOLVER:
   BASE_LR: 0.001
   BIAS_LR_FACTOR: 2
